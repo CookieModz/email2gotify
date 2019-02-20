@@ -7,8 +7,6 @@ from subprocess import Popen, PIPE, STDOUT
 import sys
 
 CURL_PROGRAM = 'curl'
-# TODO - make this into an argument
-API_URL = 'https://gotify.example.com/message'
 PUSH_TYPE = 'note'
 
 TRACE_FILE = 'curl.trace'
