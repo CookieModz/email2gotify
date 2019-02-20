@@ -67,7 +67,7 @@ push_headers = {
 }
 
 program = CURL_PROGRAM
-cmdline = [program, args.url + "/messages?token=" + args.key, '-s', '-X', 'POST']
+cmdline = [program, args.url + "/message?token=" + args.key, '-s', '-X', 'POST']
 header_pairs = [['-d', '%s=%s' % (header, data)] for header, data in push_headers.iteritems()]
 cmdline += [item.encode(DEFAULT_ENCODING) for sublist in header_pairs for item in sublist]
 if debug_mode:
