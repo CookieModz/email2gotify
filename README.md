@@ -25,7 +25,7 @@ So our script will be something like this:
 
 ```
 #!/bin/sh
-/usr/bin/python /var/spool/postfix/email2gotify/gotify --key YOUR_GOTIFY_TOKEN --url YOUR_GOTIFY_ROOT_URL
+/usr/bin/python /var/spool/postfix/email2gotify/email2gotify.py --key YOUR_GOTIFY_TOKEN --url YOUR_GOTIFY_ROOT_URL
 ```
 
 Let's name it...umm... `/var/spool/postfix/email2gotifyemail2gotify`
