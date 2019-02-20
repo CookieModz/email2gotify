@@ -7,16 +7,18 @@ from subprocess import Popen, PIPE, STDOUT
 import sys
 
 CURL_PROGRAM = 'curl'
-API_URL = 'https://api.pushbullet.com/api/pushes'
+# TODO - make this into an argument
+API_URL = 'https://gotify.example.com/message'
 PUSH_TYPE = 'note'
 
 TRACE_FILE = 'curl.trace'
 DEFAULT_ENCODING = 'utf-8'
 
-parser = argparse.ArgumentParser(description='Send PushBullet PUSH based on email message')
+parser = argparse.ArgumentParser(description='Send Gotify PUSH based on email message')
 parser.add_argument('infile', nargs='?', type=argparse.FileType('r'), default=sys.stdin,
     help='MIME-encoded email file(if empty, stdin will be used)')
-parser.add_argument('--key', help='API key for PushBullet', required=True)
+parser.add_argument('--key', help='API key for Gotify', required=True)
+parser.add_argument('--url', help='The URL of your Gotify instance (e.g. https://gotify.example.com)', required=True)
 parser.add_argument('--debug', help='Enable debug mode', action='store_true')
 args = parser.parse_args()
 debug_mode = args.debug
@@ -61,13 +63,13 @@ for part in msg.walk():
 body_text = '%s\nFrom: %s' % (body_text, sender)
 
 push_headers = {
-    'type': PUSH_TYPE,
     'title': subject,
-    'body': body_text,
+    'message': body_text,
+    'priority': 5,
 }
 
 program = CURL_PROGRAM
-cmdline = [program, API_URL, '-s', '-u', '%s:' % args.key, '-X', 'POST']
+cmdline = [program, args.url + "/messages?token=" + args.key, '-s', '-X', 'POST']
 header_pairs = [['-d', '%s=%s' % (header, data)] for header, data in push_headers.iteritems()]
 cmdline += [item.encode(DEFAULT_ENCODING) for sublist in header_pairs for item in sublist]
 if debug_mode:
