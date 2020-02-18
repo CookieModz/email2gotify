@@ -2,15 +2,10 @@ import argparse
 import base64
 import email
 import json
+import pycurl
 import re
-from subprocess import Popen, PIPE, STDOUT
 import sys
-
-CURL_PROGRAM = 'curl'
-PUSH_TYPE = 'note'
-
-TRACE_FILE = 'curl.trace'
-DEFAULT_ENCODING = 'utf-8'
+import unicodedata
 
 parser = argparse.ArgumentParser(description='Send Gotify PUSH based on email message')
 parser.add_argument('infile', nargs='?', type=argparse.FileType('r'), default=sys.stdin,
@@ -20,8 +15,6 @@ parser.add_argument('--url', help='The URL of your Gotify instance (e.g. https:/
 parser.add_argument('--debug', help='Enable debug mode', action='store_true')
 args = parser.parse_args()
 debug_mode = args.debug
-if debug_mode:
-    print 'Debug mode enabled'
 
 msg = email.message_from_file(args.infile)
 args.infile.close()
@@ -33,8 +26,11 @@ def decode_field(field_raw):
         if encoding == 'B':
             field_coded = base64.decodestring(field_coded)
         return field_coded.decode(charset)
-    else: 
+    else:
         return field_raw
+
+def debug(debug_type, debug_msg):
+    print "debug(%d): %s" % (debug_type, debug, msg)
 
 subject_raw = msg.get('Subject', '')
 subject = decode_field(subject_raw)
@@ -59,46 +55,36 @@ for part in msg.walk():
             body_text = body_part
 
 body_text = '%s\nFrom: %s' % (body_text, sender)
+body_text = unicodedata.normalize('NFKD',body_text).encode('ascii','ignore')
 
 push_headers = {
-    'title': subject,
-    'message': body_text,
-    'priority': 5,
+    "title": subject,
+    "message": body_text,
+    "priority": 5,
 }
+push_json = json.dumps(push_headers)
 
-program = CURL_PROGRAM
-cmdline = [program, args.url + "/message?token=" + args.key, '-s', '-X', 'POST']
-header_pairs = [['-d', '%s=%s' % (header, data)] for header, data in push_headers.iteritems()]
-cmdline += [item.encode(DEFAULT_ENCODING) for sublist in header_pairs for item in sublist]
+gotify_endpoint = args.url + '/message?token=' + args.key
+
+c = pycurl.Curl()
+c.setopt(c.URL, gotify_endpoint)
+c.setopt(c.HTTPHEADER, ['Content-Type: application/json'])
+c.setopt(c.USERAGENT, 'Email To Gotify Script')
+
 if debug_mode:
-    cmdline += ['--trace-ascii', TRACE_FILE]
-    print 'Command line:'
-    print '----------'
-    print ' '.join(cmdline)
-    print '----------'
-
-process = Popen(cmdline, stdout=PIPE, stderr=STDOUT)
-stdout, stdin = process.communicate()
-exit_code = process.returncode
-if exit_code:
-    print '%s returned exit code %d' % (program, exit_code)
-    print 'Output:'
-    print '---------'
-    print stdout
-    print '---------'
-    sys.exit(exit_code)
+    c.setopt(c.DEBUGFUNCTION, debug)
 else:
-    try:
-        server_response = json.loads(stdout)
-    except:
-        if debug_mode:
-            print 'Server response was not JSON:'
-            print '--------------'
-            print stdout
-            print '--------------'
-        raise
-    error = server_response.get('error')
-    if error:
-        print 'Server returned error:'
-        print error.get('message')
-        sys.exit(1)
+    c.setopt(c.WRITEFUNCTION, lambda x: None)
+
+c.setopt(c.POSTFIELDS, push_json)
+response = c.perform_rs()
+
+http_status = c.getinfo(c.HTTP_CODE)
+fail_status = [400, 401, 403, 404, 500, 502, 503]
+
+if http_status in fail_status or debug_mode:
+  print response
+
+c.close()
+
+
