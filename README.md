@@ -12,7 +12,7 @@ This simple script allows to redirect mail input (from postfix, for example) fro
 ### Example usage
 
 Let's imagine that we want to redirect all emails sent to push@example.com to your Gotify account (and therefore to your mobile devices).
-These instructions below were tested on Debian 11, Python 3.9.
+These instructions below were tested on Debian 11, Python 3.9. Requires `pycurl` (`apt-get install python3-pycurl` or `python3 -m pip install pycurl`)
 
 #### Step zero: setup and configure postfix for domain example.com and other prerequisites
 
