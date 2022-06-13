@@ -41,13 +41,14 @@ sender = decode_field(msg.get('From', ''))
 body_text = ''
 for part in msg.walk():
     if part.get_content_type() == 'text/plain':
-        body_part = part.get_payload()
+        body_part = part.get_payload(decode=True)
 
         if body_text:
           body_text = body_text + '\n' + body_part
         else:
             body_text = body_part
 
+body_text = str(body_text, "utf-8")
 body_text = body_text + '\n' + sender
 
 push_headers = {
