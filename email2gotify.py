@@ -48,7 +48,8 @@ for part in msg.walk():
         else:
             body_text = body_part
 
-body_text = str(body_text, "utf-8")
+if not type(body_text) is str:
+    body_text = str(body_text, "utf-8")
 body_text = body_text + '\n' + sender
 
 push_headers = {
