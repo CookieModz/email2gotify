@@ -44,7 +44,7 @@ sender = decode_field(msg.get('From', ''))
 body_text = ''
 for part in msg.walk():
     if part.get_content_type() == 'text/plain':
-        body_part = part.get_payload(decode=True)
+        body_part = part.get_payload(decode=True).decode('utf-8').replace('\\n', '\n')
     if part.get_content_type() == 'text/html':
         if 'utf-8' in charset:
             body_part = part.get_payload()
@@ -56,8 +56,6 @@ for part in msg.walk():
     else:
         body_text = body_part
 
-if not type(body_text) is str:
-    body_text = str(body_text, "utf-8")
 body_text = body_text + '\n' + sender
 
 push_headers = {
@@ -90,4 +88,5 @@ if http_status in fail_status or debug_mode:
   print(response)
 
 c.close()
+
 
