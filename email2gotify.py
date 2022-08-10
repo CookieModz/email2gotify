@@ -6,10 +6,12 @@ import json
 import pycurl
 import re
 import sys
-import unicodedata
+import html2text
+
+sys.stdin.reconfigure(encoding='utf-8')
 
 parser = argparse.ArgumentParser(description='Send Gotify PUSH based on email message')
-parser.add_argument('infile', nargs='?', type=argparse.FileType('r'), default=sys.stdin,
+parser.add_argument('infile', nargs='?', type=argparse.FileType(mode='r', encoding="UTF-8"), default=sys.stdin,
     help='MIME-encoded email file(if empty, stdin will be used)')
 parser.add_argument('--key', help='API key for Gotify', required=True)
 parser.add_argument('--url', help='The URL of your Gotify instance (e.g. https://gotify.example.com)', required=True)
@@ -33,6 +35,7 @@ def decode_field(field_raw):
 def debug(debug_type, debug_msg):
     print(f"{debug_type} {debug} {msg}")
 
+charset = msg.get_charsets()
 subject_raw = msg.get('Subject', '')
 subject = decode_field(subject_raw)
 
@@ -42,7 +45,12 @@ body_text = ''
 for part in msg.walk():
     if part.get_content_type() == 'text/plain':
         body_part = part.get_payload(decode=True)
-
+    if part.get_content_type() == 'text/html':
+        if 'utf-8' in charset:
+            body_part = part.get_payload()
+        else:
+            body_part = part.get_payload(decode=True).decode(part.get_content_charset())
+        body_part = html2text.html2text(body_part)
         if body_text:
           body_text = body_text + '\n' + body_part
         else:
@@ -82,3 +90,4 @@ if http_status in fail_status or debug_mode:
   print(response)
 
 c.close()
+
