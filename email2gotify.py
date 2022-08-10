@@ -51,10 +51,10 @@ for part in msg.walk():
         else:
             body_part = part.get_payload(decode=True).decode(part.get_content_charset())
         body_part = html2text.html2text(body_part)
-        if body_text:
-          body_text = body_text + '\n' + body_part
-        else:
-            body_text = body_part
+    if body_text:
+        body_text = body_text + '\n' + body_part
+    else:
+        body_text = body_part
 
 if not type(body_text) is str:
     body_text = str(body_text, "utf-8")
