@@ -29,9 +29,19 @@ def htmlListToString(html):
         str += html2text.html2text(ele) + '\n'
     return str
 
+message = ''
+name, emailaddr = msg.from_[0]
+
+if len(msg.text_html):
+    message = htmlListToString(msg.text_html).rstrip() + '\n\n';
+else:
+    message = '\n'.join(msg.text_plain) + '\n'
+
+message = message + name + ' <' + emailaddr + '>'
+
 push_headers = {
     "title": msg.subject,
-    "message": htmlListToString(msg.text_html),
+    "message": message,
     "priority": 5,
 }
 
