@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 import argparse
-import base64
-import email
 import json
 import pycurl
-import re
 import sys
 import html2text
+import mailparser
 
 sys.stdin.reconfigure(encoding='utf-8')
 
@@ -19,48 +17,21 @@ parser.add_argument('--debug', help='Enable debug mode', action='store_true')
 args = parser.parse_args()
 debug_mode = args.debug
 
-msg = email.message_from_file(args.infile)
+msg = mailparser.parse_from_file_obj(args.infile)
 args.infile.close()
-
-def decode_field(field_raw):
-    match = re.match(r'\=\?([^\?]+)\?([BQ])\?([^\?]+)\?\=', field_raw)
-    if match:
-        charset, encoding, field_coded = match.groups()
-        if encoding == 'B':
-            field_coded = base64.decodestring(field_coded)
-        return field_coded.decode(charset)
-    else:
-        return field_raw
 
 def debug(debug_type, debug_msg):
     print(f"{debug_type} {debug} {msg}")
 
-charset = msg.get_charsets()
-subject_raw = msg.get('Subject', '')
-subject = decode_field(subject_raw)
-
-sender = decode_field(msg.get('From', ''))
-
-body_text = ''
-for part in msg.walk():
-    if part.get_content_type() == 'text/plain':
-        body_part = part.get_payload(decode=True).decode('utf-8').replace('\\n', '\n')
-    if part.get_content_type() == 'text/html':
-        if 'utf-8' in charset:
-            body_part = part.get_payload()
-        else:
-            body_part = part.get_payload(decode=True).decode(part.get_content_charset())
-        body_part = html2text.html2text(body_part)
-    if body_text:
-        body_text = body_text + '\n' + body_part
-    else:
-        body_text = body_part
-
-body_text = body_text + '\n' + sender
+def htmlListToString(html): 
+    str = ""
+    for ele in html:
+        str += html2text.html2text(ele) + '\n'
+    return str
 
 push_headers = {
-    "title": subject,
-    "message": body_text,
+    "title": msg.subject,
+    "message": htmlListToString(msg.text_html),
     "priority": 5,
 }
 
@@ -88,5 +59,3 @@ if http_status in fail_status or debug_mode:
   print(response)
 
 c.close()
-
-
